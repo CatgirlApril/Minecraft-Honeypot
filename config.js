@@ -1,6 +1,6 @@
 const host = '0.0.0.0'
 const port = 25565
-const version = '1.20.1'
+const version = '1.19.3'
 
 const abuseipdb_key = process.env["ABUSEIPDB_API_KEY"];
 const report_ip = true;
