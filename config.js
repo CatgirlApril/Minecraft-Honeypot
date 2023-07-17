@@ -3,10 +3,10 @@ const port = 25565
 const version = '1.16.3'
 
 const abuseipdb_key = process.env['ABUSEIPDB_API_KEY']
-const report_ip = true
+const report_ip = false
 
 const discord_webhook = process.env['DISCORD_WEBHOOK_URL']
-const send_to_webhook = true
+const send_to_webhook = false
 
 module.exports = {
     host,

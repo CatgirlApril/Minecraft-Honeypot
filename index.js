@@ -21,7 +21,6 @@ const server = mc.createServer({
 })
 
 const chunk = new (require('prismarine-chunk')(config.version))()
-
 world.setup(chunk, mcData)
 
 console.log('Honeypot started')
@@ -31,6 +30,8 @@ setInterval(checkIPs, 60000)
 server.on('login', function (client) {
     const loginPacket = mcData.loginPacket
 
+    console.log('[!] Analysing client')
+
     analyse(client)
 
     // let player_brand; // NYI
@@ -39,42 +40,48 @@ server.on('login', function (client) {
     //     player_brand = brand
     // })
 
-  client.write('login', {
-    entityId: client.id,
-    isHardcore: false,
-    gameMode: 0,
-    previousGameMode: 1,
-    worldNames: loginPacket.worldNames,
-    dimensionCodec: loginPacket.dimensionCodec,
-    dimension: loginPacket.dimension,
-    worldName: 'minecraft:overworld',
-    hashedSeed: [0, 0],
-    maxPlayers: server.maxPlayers,
-    viewDistance: 3,
-    reducedDebugInfo: false,
-    enableRespawnScreen: true,
-    isDebug: false,
-    isFlat: true
-  });
+    console.log('[!] Sending login packet')
 
-  for (let x = -5; x < 5; x++) {
-    for (let z = -5; z < 5; z++) {
-      client.write('map_chunk', {
-        x: x,
-        z: z,
-        groundUp: true,
-        biomes: chunk.dumpBiomes !== undefined ? chunk.dumpBiomes() : undefined,
-        heightmaps: {
-          type: 'compound',
-          name: '',
-          value: {} // Client will accept fake heightmap
-        },
-        bitMap: chunk.getMask(),
-        chunkData: chunk.dump(),
-        blockEntities: []
-      })
+    client.write('login', {
+        entityId: client.id,
+        isHardcore: false,
+        gameMode: 0,
+        previousGameMode: 1,
+        worldNames: loginPacket.worldNames,
+        dimensionCodec: loginPacket.dimensionCodec,
+        dimension: loginPacket.dimension,
+        worldName: 'minecraft:overworld',
+        hashedSeed: [0, 0],
+        maxPlayers: server.maxPlayers,
+        viewDistance: 3,
+        reducedDebugInfo: false,
+        enableRespawnScreen: true,
+        isDebug: false,
+        isFlat: true
+    })
+
+    console.log('[!] Sending chunk packets')
+
+    for (let x = -5; x < 5; x++) {
+        for (let z = -5; z < 5; z++) {
+            client.write('map_chunk', {
+                x: x,
+                z: z,
+                groundUp: true,
+                biomes: chunk.dumpBiomes !== undefined ? chunk.dumpBiomes() : undefined,
+                heightmaps: {
+                  type: 'compound',
+                  name: '',
+                  value: {} // Client will accept fake heightmap
+                },
+                bitMap: chunk.getMask(),
+                chunkData: chunk.dump(),
+                blockEntities: []
+            })
+        }
     }
-  }
+
+    console.log('[!] Sending position packet')
 
     client.write('position', {
         x: 0,
@@ -85,8 +92,10 @@ server.on('login', function (client) {
         flags: 0x00
     })
 
-    client.registerChannel('minecraft:brand', ['string', []])
-    client.writeChannel('minecraft:brand', 'vanilla')
+    //console.log('[!] Sending server brand')
+
+    //client.registerChannel('minecraft:brand', ['string', []])
+    //client.writeChannel('minecraft:brand', 'vanilla')
 
     // client.on('chat', function (data) {
     //     utils.broadcast(data.message, null, client.username, server)
@@ -108,6 +117,6 @@ server.on('listening', function () {
 
 process.on('SIGINT', () => {
     server.close()
-    console.log('Honeypot stopped.\n')
+    console.log('\nHoneypot stopped.')
     process.exit()
 })
