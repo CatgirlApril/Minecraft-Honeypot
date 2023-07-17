@@ -4,7 +4,7 @@ const utils = require('./utils.js')
 const world = require('./world.js')
 
 const mc = require('minecraft-protocol')
-const mcData = require('minecraft-data')(server.version)
+const mcData = require('minecraft-data')(config.version)
 
 console.log('Starting honeypot...')
 
@@ -22,8 +22,12 @@ const server = mc.createServer({
 })
 
 const chunk = new (require('prismarine-chunk')(config.version))()
-
 world.setup(chunk, mcData)
+
+const skyLight = [
+    Array(2048).fill(0, 0, 512).fill(255, 512, 2048),
+    Array(2048).fill(255)
+]
 
 console.log('Honeypot started')
 
@@ -32,6 +36,8 @@ setInterval(checkIPs, 60000)
 server.on('login', function (client) {
     const loginPacket = mcData.loginPacket
 
+    console.log('[!] Analysing client')
+
     analyse(client)
 
     // let player_brand; // NYI
@@ -39,6 +45,8 @@ server.on('login', function (client) {
     // client.on('minecraft:brand', (brand) => {
     //     player_brand = brand
     // })
+
+    console.log('[!] Sending login packet')
 
     client.write('login', {
         entityId: client.id,
@@ -50,14 +58,16 @@ server.on('login', function (client) {
         worldType: loginPacket.worldType,
         worldName: 'minecraft:overworld',
         hashedSeed: [0, 0],
-        maxPlayers: 20,
+        maxPlayers: server.maxPlayers,
         viewDistance: 3,
         simulationDistance: 3,
         reducedDebugInfo: false,
         enableRespawnScreen: true,
         isDebug: false,
-        isFlat: false
+        isFlat: true
     })
+
+    console.log('[!] Sending chunk packets')
 
     for (let x = -5; x < 5; x++) {
         for (let z = -5; z < 5; z++) {
@@ -70,9 +80,19 @@ server.on('login', function (client) {
                     value: {}, // Client will accept fake heightmap
                 },
                 chunkData: chunk.dump(),
+                blockEntities: [],
+                trustEdges: true,
+                skyLightMask: [[0, 6]],
+                blockLightMask: [],
+                emptySkyLightMask: [[0, 1]],
+                emptyBlockLightMask: [[0, 7]],
+                skyLight: skyLight,
+                blockLight: []
             })
         }
     }
+
+    console.log('[!] Sending position packet')
 
     client.write('position', {
         x: 0,
@@ -83,8 +103,10 @@ server.on('login', function (client) {
         flags: 0x00
     })
 
-    client.registerChannel('minecraft:brand', ['string', []])
-    client.writeChannel('minecraft:brand', 'vanilla')
+    //console.log('[!] Sending server brand')
+
+    //client.registerChannel('minecraft:brand', ['string', []])
+    //client.writeChannel('minecraft:brand', 'vanilla')
 
     // client.on('chat', function (data) {
     //     utils.broadcast(data.message, null, client.username, server)
@@ -106,6 +128,6 @@ server.on('listening', function () {
 
 process.on('SIGINT', () => {
     server.close()
-    console.log('Honeypot stopped.')
+    console.log('\nHoneypot stopped.')
     process.exit()
 })

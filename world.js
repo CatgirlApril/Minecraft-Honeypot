@@ -1,27 +1,27 @@
-const Vec3 = require('vec3')
+const config = require('./config.js')
+
+const Block = require('prismarine-block')(require('prismarine-registry')(config.version))
 
 function setup(chunk, mcData) {
-    for (let x = 0; x < 16; x++) {
-        for (let z = 0; z < 16; z++) {
-            chunk.biomes[x + z * 16] = 1
+    chunk.initialize((x, y, z) => {
+        let block = mcData.blocksByName.air
+        let metadata = 0
 
-            chunk.setBlockType(new Vec3(x, 3, z), mcData.blocksByName.grass_block.id)
-            chunk.setBlockData(new Vec3(x, 3, z), 1)
-
-            for (let y = 1; y < 3; y++) {
-                chunk.setBlockType(new Vec3(x, y, z), mcData.blocksByName.dirt.id)
-                chunk.setBlockData(new Vec3(x, y, z), 0)
-            }
-
-            chunk.setBlockType(new Vec3(x, 0, z), mcData.blocksByName.bedrock.id)
-            chunk.setBlockData(new Vec3(x, 0, z), 0)
-
-            for (y = 0; y < 256; y++) {
-                chunk.setSkyLight(new Vec3(x, y, z), 15)
-                chunk.setBlockLight(new Vec3(x, y, z), 15)
-            }
+        if (y === 0) {
+            block = mcData.blocksByName.bedrock
         }
-    }
+
+        if (y > 0 && y < 3) {
+            block = mcData.blocksByName.dirt
+            metadata = 1
+        }
+
+        if (y === 3) {
+            block = mcData.blocksByName.grass_block
+        }
+
+        return new Block(block.id, mcData.biomesByName.plains.id, metadata)
+    })
 }
 
 module.exports = {
