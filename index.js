@@ -1,48 +1,43 @@
+const { analyse, checkIPs } = require('./analyse.js')
+const config = require('./config.js')
 const utils = require('./utils.js')
 const world = require('./world.js')
-const config = require('./config.js')
 
-const mc = require('minecraft-protocol');
-const Chunk = require('prismarine-chunk')(config.version)
+const mc = require('minecraft-protocol')
+const mcData = require('minecraft-data')(config.version)
 
-const { analyse, checkIPs } = require('./analyse.js');
-
-console.log("Starting honeypot...")
-
+console.log('Starting honeypot...')
 
 const server = mc.createServer({
-  'online-mode': true,
-  encryption: true,
-  host: config.host,
-  port: config.port,
-  version: config.version,
-  beforePing: async (response, client, callback) => {
-    analyse(client);
-    callback(null, response);
-  }
-});
-const mcData = require('minecraft-data')(server.version)
+    'online-mode': true,
+    encryption: true,
+    host: config.host,
+    port: config.port,
+    version: config.version,
+    beforePing: async (response, client, callback) => {
+        analyse(client)
+        callback(null, response)
+    },
+})
 
-const chunk = new Chunk()
+const chunk = new (require('prismarine-chunk')(config.version))()
 
 world.setup(chunk, mcData)
 
-console.log("Honeypot started")
+console.log('Honeypot started')
 
-setInterval(checkIPs, 60000);
+setInterval(checkIPs, 60000)
 
-server.on('login', function(client) {
-  const loginPacket = mcData.loginPacket
+server.on('login', function (client) {
+    const loginPacket = mcData.loginPacket
 
-  analyse(client);
+    analyse(client)
 
-  let player_brand; // Not used yet
+    // let player_brand; // NYI
 
-  client.registerChannel('minecraft:brand', ['string', []])
-
-  client.on('minecraft:brand', brand => {
-    player_brand = brand;
-  });
+    // client.on('minecraft:brand', (brand) => {
+    //     player_brand = brand
+    // })
 
   client.write('login', {
     entityId: client.id,
@@ -81,38 +76,38 @@ server.on('login', function(client) {
     }
   }
 
-  client.write('position', {
-    x: utils.getRandomInt(16),
-    y: 4,
-    z: utils.getRandomInt(16),
-    yaw: utils.getRandomInt(180),
-    pitch: 0,
-    flags: 0x00
-  })
+    client.write('position', {
+        x: 0,
+        y: 4,
+        z: 0,
+        yaw: 0,
+        pitch: 0,
+        flags: 0x00
+    })
 
-  client.writeChannel('minecraft:brand', 'vanilla')
+    client.registerChannel('minecraft:brand', ['string', []])
+    client.writeChannel('minecraft:brand', 'vanilla')
 
-  client.on('chat', function (data) {
-    utils.broadcast(data.message, null, client.username, server)
-    console.log(client.username + ': ' + data.message)
-  })
-
-});
+    // client.on('chat', function (data) {
+    //     utils.broadcast(data.message, null, client.username, server)
+    //     console.log(client.username + ': ' + data.message)
+    // })
+})
 
 server.on('error', function (error) {
-  console.log('Error:', error)
+    console.log('Error: ', error)
 })
 
 server.on('connection', function (client) {
-  console.log('New connection from IP:', client.socket.remoteAddress)
+    console.log('New connection from IP: ', client.socket.remoteAddress)
 })
 
 server.on('listening', function () {
-  console.log('Listening on port', server.socketServer.address().port)
+    console.log('Listening on port ', server.socketServer.address().port)
 })
 
 process.on('SIGINT', () => {
-  server.close();
-  console.log('Honeypot stopped.');
-  process.exit();
-});
+    server.close()
+    console.log('Honeypot stopped.\n')
+    process.exit()
+})
