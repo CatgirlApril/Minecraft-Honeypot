@@ -1,8 +1,4 @@
-const config = require('./config.js')
-
-const Block = require('prismarine-block')(require('prismarine-registry')(config.version))
-
-function setup(chunk, mcData) {
+function setup(chunk, mcData, Block, isSpecial) {
     chunk.initialize((x, y, z) => {
         let block = mcData.blocksByName.air
         let metadata = 0
@@ -18,6 +14,9 @@ function setup(chunk, mcData) {
 
         if (y === 3) {
             block = mcData.blocksByName.grass_block
+            if (isSpecial) {
+                block = mcData.blocksByName.gold_block
+            }
         }
 
         return new Block(block.id, mcData.biomesByName.plains.id, metadata)
